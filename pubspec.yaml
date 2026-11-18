@@ -1,0 +1,22 @@
+name: okozukai_manager
+description: Android向けお小遣い・収支管理アプリ（現金・電子決済・固定収支・1日あたりの生活目安シミュレーター対応）
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.0
+  flutter: '>=3.38.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  shared_preferences: ^2.5.5
+  provider: ^6.1.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: any
+
+flutter:
+  uses-material-design: true
