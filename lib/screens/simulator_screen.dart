@@ -35,6 +35,7 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
     final sim = store.calculateSimulation();
     final scheme = Theme.of(context).colorScheme;
     final usingCustom = store.customSimBaseAmount != null;
+    final simple = store.isSimpleTheme;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
@@ -43,20 +44,30 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: sim.dailyLimit >= 0
-                  ? [
-                      scheme.primary,
-                      Color.lerp(scheme.primary, Colors.black, 0.28)!,
-                    ]
-                  : [
-                      const Color(0xFFC62828),
-                      const Color(0xFF8E0000),
-                    ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(20),
+            color: simple ? Colors.white : null,
+            border: simple
+                ? Border.all(
+                    color: sim.dailyLimit < 0
+                        ? scheme.error.withValues(alpha: 0.4)
+                        : const Color(0xFFE5E7EB),
+                  )
+                : null,
+            gradient: simple
+                ? null
+                : LinearGradient(
+                    colors: sim.dailyLimit >= 0
+                        ? [
+                            scheme.primary,
+                            Color.lerp(scheme.primary, Colors.black, 0.28)!,
+                          ]
+                        : [
+                            const Color(0xFFC62828),
+                            const Color(0xFF8E0000),
+                          ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+            borderRadius: BorderRadius.circular(simple ? 14 : 20),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -64,41 +75,57 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
               Text(
                 '${formatYen(sim.baseFunds)} で '
                 '${sim.totalDays}日間（約${sim.monthsEquivalent.toStringAsFixed(1)}ヶ月）生活する場合',
-                style: const TextStyle(
-                  color: Colors.white70,
+                style: TextStyle(
+                  color: simple
+                      ? scheme.onSurface.withValues(alpha: 0.6)
+                      : Colors.white70,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 '1日あたり使える目安金額',
-                style: TextStyle(color: Colors.white, fontSize: 13),
+                style: TextStyle(
+                  color: simple ? scheme.onSurface : Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               const SizedBox(height: 2),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  Text(
-                    formatYen(sim.dailyLimit),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 36,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -0.5,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      formatYen(sim.dailyLimit),
+                      style: TextStyle(
+                        color: simple
+                            ? (sim.dailyLimit < 0
+                                ? scheme.error
+                                : scheme.onSurface)
+                            : Colors.white,
+                        fontSize: 36,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.5,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 6),
-                  const Text(
-                    '/ 日',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
+                    const SizedBox(width: 6),
+                    Text(
+                      '/ 日',
+                      style: TextStyle(
+                        color: simple
+                            ? scheme.onSurface.withValues(alpha: 0.6)
+                            : Colors.white70,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               const SizedBox(height: 14),
               Row(
@@ -107,7 +134,8 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                     child: _SimStatTile(
                       label: '今日あと使える額',
                       value: formatYen(sim.todayRemaining),
-                      sub: '今日の実績: ${formatYen(sim.todayVariableSpent)}',
+                      sub: '今日の支出: ${formatYen(sim.todayVariableSpent)}',
+                      lightMode: simple,
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -116,15 +144,19 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                       label: '1週間(7日)換算',
                       value: formatYen(sim.weeklyLimit),
                       sub: '30日換算: ${formatYen(sim.monthlyLimit)}',
+                      lightMode: simple,
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
               Container(
+                width: double.infinity,
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.12),
+                  color: simple
+                      ? const Color(0xFFF3F4F6)
+                      : Colors.white.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -133,8 +165,8 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                   '${sim.deductFixedExpense ? " - 固定引落 ${formatYen(sim.projectedFixedExpense)}" : ""}'
                   '${sim.reserveGoal > 0 ? " - 予備費 ${formatYen(sim.reserveGoal)}" : ""}'
                   ' = 自由枠 ${formatYen(sim.spendablePool)}',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: simple ? scheme.onSurface : Colors.white,
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                   ),
@@ -154,17 +186,21 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      '① 生活する期間（◯ヶ月・◯日間）',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
+                    const Expanded(
+                      child: Text(
+                        '① 生活する期間',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
+                    const SizedBox(width: 8),
                     Text(
-                      '${sim.totalDays}日間 (約${sim.monthsEquivalent.toStringAsFixed(1)}ヶ月)',
+                      '${sim.totalDays}日 (約${sim.monthsEquivalent.toStringAsFixed(1)}ヶ月)',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w800,
@@ -179,13 +215,13 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                   runSpacing: 8,
                   children: [
                     for (final p in const [
-                      (label: '半月 (15日)', days: 15),
-                      (label: '1ヶ月 (30日)', days: 30),
-                      (label: '2ヶ月 (60日)', days: 60),
-                      (label: '3ヶ月 (90日)', days: 90),
-                      (label: '4ヶ月 (120日)', days: 120),
-                      (label: '6ヶ月 (180日)', days: 180),
-                      (label: '1年 (365日)', days: 365),
+                      (label: '半月', days: 15),
+                      (label: '1ヶ月', days: 30),
+                      (label: '2ヶ月', days: 60),
+                      (label: '3ヶ月', days: 90),
+                      (label: '4ヶ月', days: 120),
+                      (label: '6ヶ月', days: 180),
+                      (label: '1年', days: 365),
                     ])
                       ChoiceChip(
                         label: Text(
@@ -223,23 +259,32 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  '② 基準にする金額（「この金額で生活する」）',
+                  '② 基準にする金額',
                   style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 10),
                 SizedBox(
                   width: double.infinity,
                   child: SegmentedButton<bool>(
-                    segments: [
+                    showSelectedIcon: false,
+                    segments: const [
                       ButtonSegment(
                         value: false,
                         label: Text(
-                          '現在の残高 (${formatYen(store.simulationTargetBalance)})',
+                          '現在の残高',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 12),
                         ),
                       ),
-                      const ButtonSegment(
+                      ButtonSegment(
                         value: true,
-                        label: Text('金額を直接指定して試算'),
+                        label: Text(
+                          '金額を指定',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 12),
+                        ),
                       ),
                     ],
                     selected: {usingCustom},
@@ -542,19 +587,24 @@ class _SimStatTile extends StatelessWidget {
   final String label;
   final String value;
   final String sub;
+  final bool lightMode;
 
   const _SimStatTile({
     required this.label,
     required this.value,
     required this.sub,
+    this.lightMode = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.14),
+        color: lightMode
+            ? const Color(0xFFF3F4F6)
+            : Colors.white.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -562,21 +612,39 @@ class _SimStatTile extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(color: Colors.white70, fontSize: 11),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: lightMode
+                  ? scheme.onSurface.withValues(alpha: 0.65)
+                  : Colors.white70,
+              fontSize: 11,
+            ),
           ),
           const SizedBox(height: 2),
-          Text(
-            value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: TextStyle(
+                color: lightMode ? scheme.onSurface : Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
           const SizedBox(height: 2),
           Text(
             sub,
-            style: const TextStyle(color: Colors.white70, fontSize: 10),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: lightMode
+                  ? scheme.onSurface.withValues(alpha: 0.55)
+                  : Colors.white70,
+              fontSize: 10,
+            ),
           ),
         ],
       ),

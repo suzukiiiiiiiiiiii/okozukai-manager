@@ -178,4 +178,39 @@ void main() {
       expect(sim.todayRemaining, 277);
     });
   });
+
+  group('初回起動・チュートリアル体験モード・シンプルテーマ', () {
+    test('初回起動時はサンプルデータが入らずクリーンな状態でチュートリアルが表示される', () async {
+      final store = FinanceStore();
+      await store.load(nowOverride: DateTime(2026, 11, 18));
+
+      expect(store.hasCompletedTutorial, isFalse);
+      expect(store.isSimpleTheme, isTrue);
+      expect(store.transactions, isEmpty);
+      expect(store.recurringRules, isEmpty);
+      expect(store.wallets.length, 1);
+      expect(store.totalBalance, 0);
+    });
+
+    test('チュートリアル体験モードは終了すると使用例が一切残らず本番状態に戻る', () async {
+      final store = FinanceStore();
+      await store.load(nowOverride: DateTime(2026, 11, 18));
+
+      // 体験モード開始
+      store.enterTutorialDemoMode(nowOverride: DateTime(2026, 11, 18));
+      expect(store.isTutorialDemoMode, isTrue);
+      expect(store.transactions, isNotEmpty);
+      expect(store.recurringRules, isNotEmpty);
+      expect(store.wallets.length, greaterThan(1));
+
+      // 体験モード終了 → サンプルが完全に消えてクリーンな状態に戻る
+      await store.exitTutorialDemoMode();
+      expect(store.isTutorialDemoMode, isFalse);
+      expect(store.hasCompletedTutorial, isTrue);
+      expect(store.transactions, isEmpty);
+      expect(store.recurringRules, isEmpty);
+      expect(store.wallets.length, 1);
+      expect(store.totalBalance, 0);
+    });
+  });
 }

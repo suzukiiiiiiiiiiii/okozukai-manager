@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../app_theme.dart';
 import '../finance_store.dart';
 import '../formatters.dart';
 import '../models.dart';
@@ -22,34 +23,44 @@ class WalletsScreen extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
       children: [
         // 1. 現金・電子決済・口座・カード管理セクション
+        const Text(
+          '現金・電子決済・口座',
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 8),
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              '現金・電子決済・口座の管理',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => showAddTransactionSheet(
+                  context,
+                  initialKind: TransactionKind.transfer,
+                ),
+                icon: const Icon(Icons.swap_horiz_rounded, size: 16),
+                label: const Text(
+                  'チャージ・振替',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                ),
+              ),
             ),
-            Row(
-              children: [
-                OutlinedButton.icon(
-                  onPressed: () => showAddTransactionSheet(
-                    context,
-                    initialKind: TransactionKind.transfer,
-                  ),
-                  icon: const Icon(Icons.swap_horiz_rounded, size: 16),
-                  label: const Text('チャージ', style: TextStyle(fontSize: 12)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: FilledButton.icon(
+                onPressed: () => showAddWalletSheet(context),
+                icon: const Icon(Icons.add_rounded, size: 16),
+                label: const Text(
+                  '決済手段を追加',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
                 ),
-                const SizedBox(width: 6),
-                FilledButton.icon(
-                  onPressed: () => showAddWalletSheet(context),
-                  icon: const Icon(Icons.add_rounded, size: 16),
-                  label: const Text('追加', style: TextStyle(fontSize: 12)),
-                ),
-              ],
+              ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         Card(
           child: Column(
             children: [
@@ -62,11 +73,13 @@ class WalletsScreen extends StatelessWidget {
                     return ListTile(
                       onTap: () => showAddWalletSheet(context, existing: w),
                       leading: CircleAvatar(
-                        backgroundColor: w.color.withValues(alpha: 0.15),
-                        child: Icon(w.type.icon, color: w.color, size: 20),
+                        backgroundColor: w.color.withValues(alpha: 0.14),
+                        child: Icon(w.type.icon, color: w.color, size: 19),
                       ),
                       title: Text(
                         w.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
@@ -75,6 +88,8 @@ class WalletsScreen extends StatelessWidget {
                       subtitle: Text(
                         '${w.type.label} · '
                         '${w.includeInSimulation ? "生活目安対象" : "目安対象外"}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(fontSize: 11),
                       ),
                       trailing: Row(
@@ -83,13 +98,13 @@ class WalletsScreen extends StatelessWidget {
                           Text(
                             formatYen(bal),
                             style: TextStyle(
-                              fontSize: 15,
+                              fontSize: 14,
                               fontWeight: FontWeight.w800,
                               color:
                                   bal < 0 ? scheme.error : scheme.onSurface,
                             ),
                           ),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: 2),
                           const Icon(Icons.chevron_right_rounded, size: 18),
                         ],
                       ),
@@ -104,37 +119,47 @@ class WalletsScreen extends StatelessWidget {
         const SizedBox(height: 22),
 
         // 2. 固定引き落とし・固定収入（定期収支）セクション
+        const Text(
+          '固定引き落とし・固定収入',
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 8),
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              '固定引き落とし・固定収入',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => showAddRecurringSheet(
+                  context,
+                  initialIsIncome: true,
+                ),
+                icon: const Icon(Icons.add_rounded, size: 16),
+                label: const Text(
+                  '固定収入を追加',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                ),
+              ),
             ),
-            Row(
-              children: [
-                OutlinedButton.icon(
-                  onPressed: () => showAddRecurringSheet(
-                    context,
-                    initialIsIncome: true,
-                  ),
-                  icon: const Icon(Icons.add_rounded, size: 16),
-                  label: const Text('固定収入', style: TextStyle(fontSize: 12)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: FilledButton.icon(
+                onPressed: () => showAddRecurringSheet(
+                  context,
+                  initialIsIncome: false,
                 ),
-                const SizedBox(width: 6),
-                FilledButton.icon(
-                  onPressed: () => showAddRecurringSheet(
-                    context,
-                    initialIsIncome: false,
-                  ),
-                  icon: const Icon(Icons.add_rounded, size: 16),
-                  label: const Text('固定引落', style: TextStyle(fontSize: 12)),
+                icon: const Icon(Icons.add_rounded, size: 16),
+                label: const Text(
+                  '固定引落を追加',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
                 ),
-              ],
+              ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
 
         // 固定収支の月額サマリー
         Card(
@@ -147,52 +172,72 @@ class WalletsScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        '毎月の固定収入合計',
+                        '毎月の固定収入',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(fontSize: 11),
                       ),
-                      Text(
-                        '+${formatYen(fixedInc)}',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF2E7D32),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          '+${formatYen(fixedInc)}',
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF15803D),
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        '毎月の固定引落合計',
+                        '毎月の固定引落',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(fontSize: 11),
                       ),
-                      Text(
-                        '-${formatYen(fixedExp)}',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          color: scheme.error,
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          '-${formatYen(fixedExp)}',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            color: scheme.error,
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       const Text(
-                        '固定収支ベース差引',
+                        '差引',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(fontSize: 11),
                       ),
-                      Text(
-                        formatYen(fixedInc - fixedExp, showPlus: true),
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          formatYen(fixedInc - fixedExp, showPlus: true),
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
                       ),
                     ],
@@ -206,11 +251,17 @@ class WalletsScreen extends StatelessWidget {
         const SizedBox(height: 10),
 
         if (store.recurringRules.isEmpty)
-          const Card(
+          Card(
             child: Padding(
-              padding: EdgeInsets.all(20),
+              padding: const EdgeInsets.all(18),
               child: Center(
-                child: Text('固定引き落とし（サブスク・通信費・家賃等）や固定収入はまだ登録されていません'),
+                child: Text(
+                  '固定引き落としや固定収入はまだ登録されていません',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: scheme.onSurface.withValues(alpha: 0.65),
+                  ),
+                ),
               ),
             ),
           )
@@ -229,11 +280,13 @@ class WalletsScreen extends StatelessWidget {
                         onTap: () =>
                             showAddRecurringSheet(context, existing: rule),
                         leading: CircleAvatar(
-                          backgroundColor: cat.color.withValues(alpha: 0.15),
-                          child: Icon(cat.icon, color: cat.color, size: 20),
+                          backgroundColor: cat.color.withValues(alpha: 0.14),
+                          child: Icon(cat.icon, color: cat.color, size: 19),
                         ),
                         title: Text(
                           rule.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
@@ -243,8 +296,9 @@ class WalletsScreen extends StatelessWidget {
                           ),
                         ),
                         subtitle: Text(
-                          '${rule.dayLabel} · ${w?.name ?? ""} · '
-                          '${rule.autoRecord ? "到来日自動計上" : "手動/目安反映のみ"}',
+                          '${rule.dayLabel} · ${w?.name ?? ""}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(fontSize: 11),
                         ),
                         trailing: Row(
@@ -259,10 +313,10 @@ class WalletsScreen extends StatelessWidget {
                                       ? '+${formatYen(rule.amount)}'
                                       : '-${formatYen(rule.amount)}',
                                   style: TextStyle(
-                                    fontSize: 14,
+                                    fontSize: 13,
                                     fontWeight: FontWeight.w800,
                                     color: rule.isIncome
-                                        ? const Color(0xFF2E7D32)
+                                        ? const Color(0xFF15803D)
                                         : scheme.onSurface,
                                   ),
                                 ),
@@ -292,6 +346,12 @@ class WalletsScreen extends StatelessWidget {
                               ],
                             ),
                             IconButton(
+                              visualDensity: VisualDensity.compact,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(
+                                minWidth: 32,
+                                minHeight: 32,
+                              ),
                               icon: const Icon(
                                 Icons.delete_outline_rounded,
                                 size: 18,
@@ -311,31 +371,84 @@ class WalletsScreen extends StatelessWidget {
 
         const SizedBox(height: 22),
 
-        // 3. ワンタップ記録テンプレートの整理 & データリセット
+        // 3. テーマ設定
         const Text(
-          'データ管理・初期設定',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+          'デザイン・テーマ',
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 8),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: SizedBox(
+              width: double.infinity,
+              child: SegmentedButton<AppThemeMode>(
+                showSelectedIcon: false,
+                segments: [
+                  for (final m in AppThemeMode.values)
+                    ButtonSegment(
+                      value: m,
+                      label: Text(
+                        m.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ),
+                ],
+                selected: {store.themeMode},
+                onSelectionChanged: (set) => store.setThemeMode(set.first),
+              ),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 22),
+
+        // 4. チュートリアル・データ管理
+        const Text(
+          'ガイド・データ管理',
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
         ),
         const SizedBox(height: 8),
         Card(
           child: Column(
             children: [
               ListTile(
-                leading: const Icon(Icons.restore_rounded),
+                leading: const Icon(Icons.menu_book_outlined),
                 title: const Text(
-                  'サンプルデータを復元する',
+                  'チュートリアルを見る',
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
                 ),
                 subtitle: const Text(
-                  '現金・PayPay・Suica・銀行口座と固定収支のサンプル状態に戻します',
+                  '使い方ガイドや使用例をいつでも見直せます',
                   style: TextStyle(fontSize: 11),
                 ),
-                onTap: () async {
-                  await store.resetAllData(withSampleData: true);
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('サンプルデータを復元しました')),
-                    );
+                onTap: store.reopenTutorial,
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.school_outlined),
+                title: Text(
+                  store.isTutorialDemoMode
+                      ? '使用例（デモ）を終了して本番に戻る'
+                      : '使用例（デモ）を一時的に体験する',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                subtitle: Text(
+                  store.isTutorialDemoMode
+                      ? 'デモデータを消去し、あなたの本番データに戻します'
+                      : '本番データを消さずに、サンプル画面を操作して試せます',
+                  style: const TextStyle(fontSize: 11),
+                ),
+                onTap: () {
+                  if (store.isTutorialDemoMode) {
+                    store.exitTutorialDemoMode();
+                  } else {
+                    store.enterTutorialDemoMode();
                   }
                 },
               ),
@@ -343,7 +456,7 @@ class WalletsScreen extends StatelessWidget {
               ListTile(
                 leading: Icon(Icons.delete_sweep_outlined, color: scheme.error),
                 title: Text(
-                  '全履歴をクリアして残高0から始める',
+                  '全データを初期化する',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
@@ -351,7 +464,7 @@ class WalletsScreen extends StatelessWidget {
                   ),
                 ),
                 subtitle: const Text(
-                  'すべての取引履歴を消去し、残高0円から新しく記録を始めます',
+                  'すべての履歴・固定費を消去し、現金0円から新しく始めます',
                   style: TextStyle(fontSize: 11),
                 ),
                 onTap: () async {

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'app_theme.dart';
 import 'models.dart';
 
 /// アプリ全体の収支・ウォレット・固定収支・生活目安設定を管理するストア。
@@ -17,13 +18,21 @@ class FinanceStore extends ChangeNotifier {
   List<RecurringRule> _recurringRules = [];
   List<QuickTemplate> _quickTemplates = [];
 
+  // チュートリアル体験モード用の本番データ退避領域（永続化しない）
+  List<Wallet>? _backupWallets;
+  List<TransactionItem>? _backupTransactions;
+  List<RecurringRule>? _backupRecurringRules;
+  List<QuickTemplate>? _backupQuickTemplates;
+
   // シミュレーターの保持設定
   int _simDays = 30; // デフォルト 1ヶ月 (30日)
   int? _customSimBaseAmount; // null なら現在の残高合計を使用
-  bool _simIncludeFixedIncome = false; // 「この金額だけで◯ヶ月生活する」を直感的に見せるため初期はfalse、ワンタップで切替可
-  bool _simDeductFixedExpense = true; // 固定引き落としは差し引く
-  int _simReserveGoal = 0; // 残したい予備費・目標貯金額
-  bool _isDarkMode = false;
+  bool _simIncludeFixedIncome = false;
+  bool _simDeductFixedExpense = true;
+  int _simReserveGoal = 0;
+  AppThemeMode _themeMode = AppThemeMode.simple;
+  bool _hasCompletedTutorial = false;
+  bool _isTutorialDemoMode = false;
 
   List<Wallet> get wallets => List.unmodifiable(_wallets);
   List<TransactionItem> get transactions => List.unmodifiable(_transactions);
@@ -35,9 +44,13 @@ class FinanceStore extends ChangeNotifier {
   bool get simIncludeFixedIncome => _simIncludeFixedIncome;
   bool get simDeductFixedExpense => _simDeductFixedExpense;
   int get simReserveGoal => _simReserveGoal;
-  bool get isDarkMode => _isDarkMode;
+  AppThemeMode get themeMode => _themeMode;
+  bool get isSimpleTheme => _themeMode == AppThemeMode.simple;
+  bool get isDarkMode => _themeMode == AppThemeMode.dark;
+  bool get hasCompletedTutorial => _hasCompletedTutorial;
+  bool get isTutorialDemoMode => _isTutorialDemoMode;
 
-  /// 初期化と保存データの読み込み
+  /// 初期化と保存データの読み込み（初回起動時はサンプルを入れずクリーンな状態で開始）
   Future<void> load({DateTime? nowOverride}) async {
     final prefs = await SharedPreferences.getInstance();
 
@@ -48,7 +61,7 @@ class FinanceStore extends ChangeNotifier {
           .map((e) => Wallet.fromJson(e as Map<String, dynamic>))
           .toList();
     } else {
-      _wallets = _defaultWallets();
+      _wallets = _cleanInitialWallets();
     }
 
     final txRaw = prefs.getString(_kTransactionsKey);
@@ -59,8 +72,7 @@ class FinanceStore extends ChangeNotifier {
           .toList();
       _sortTransactions();
     } else {
-      _transactions = _defaultSampleTransactions(nowOverride ?? DateTime.now());
-      _sortTransactions();
+      _transactions = [];
     }
 
     final recRaw = prefs.getString(_kRecurringKey);
@@ -70,7 +82,7 @@ class FinanceStore extends ChangeNotifier {
           .map((e) => RecurringRule.fromJson(e as Map<String, dynamic>))
           .toList();
     } else {
-      _recurringRules = _defaultRecurringRules();
+      _recurringRules = [];
     }
 
     final tplRaw = prefs.getString(_kTemplatesKey);
@@ -80,7 +92,7 @@ class FinanceStore extends ChangeNotifier {
           .map((e) => QuickTemplate.fromJson(e as Map<String, dynamic>))
           .toList();
     } else {
-      _quickTemplates = _defaultTemplates();
+      _quickTemplates = [];
     }
 
     final simRaw = prefs.getString(_kSimConfigKey);
@@ -91,7 +103,18 @@ class FinanceStore extends ChangeNotifier {
       _simIncludeFixedIncome = map['simIncludeFixedIncome'] as bool? ?? false;
       _simDeductFixedExpense = map['simDeductFixedExpense'] as bool? ?? true;
       _simReserveGoal = (map['simReserveGoal'] as num?)?.toInt() ?? 0;
-      _isDarkMode = map['isDarkMode'] as bool? ?? false;
+      if (map.containsKey('themeMode')) {
+        _themeMode = AppThemeMode.fromName(map['themeMode'] as String?);
+      } else if (map['isDarkMode'] as bool? ?? false) {
+        _themeMode = AppThemeMode.dark;
+      } else {
+        _themeMode = AppThemeMode.simple;
+      }
+      _hasCompletedTutorial = map['hasCompletedTutorial'] as bool? ?? true;
+    } else {
+      // 新規インストール時はチュートリアルを表示する
+      _hasCompletedTutorial = false;
+      _themeMode = AppThemeMode.simple;
     }
 
     await applyDueRecurringRules(nowOverride: nowOverride);
@@ -110,6 +133,7 @@ class FinanceStore extends ChangeNotifier {
     _sortTransactions();
     _recurringRules = recurringRules ?? [];
     _quickTemplates = quickTemplates ?? _defaultTemplates();
+    _hasCompletedTutorial = true;
     notifyListeners();
   }
 
@@ -118,6 +142,9 @@ class FinanceStore extends ChangeNotifier {
   }
 
   Future<void> _saveAll() async {
+    // チュートリアル体験モード中はサンプルデータを永続化しない
+    if (_isTutorialDemoMode) return;
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
       _kWalletsKey,
@@ -143,14 +170,85 @@ class FinanceStore extends ChangeNotifier {
         'simIncludeFixedIncome': _simIncludeFixedIncome,
         'simDeductFixedExpense': _simDeductFixedExpense,
         'simReserveGoal': _simReserveGoal,
-        'isDarkMode': _isDarkMode,
+        'themeMode': _themeMode.name,
+        'isDarkMode': isDarkMode,
+        'hasCompletedTutorial': _hasCompletedTutorial,
       }),
     );
   }
 
-  /// ダークモード切替
+  /// テーマを設定する
+  Future<void> setThemeMode(AppThemeMode mode) async {
+    _themeMode = mode;
+    if (_isTutorialDemoMode) {
+      // テーマ設定だけは体験モード中でも反映を通知
+      notifyListeners();
+      return;
+    }
+    await _saveAll();
+    notifyListeners();
+  }
+
+  /// テーマを順番に切替（シンプル → スタンダード → ダーク）
+  Future<void> cycleThemeMode() async {
+    await setThemeMode(_themeMode.next);
+  }
+
+  /// ダークモード切替（後方互換）
   Future<void> toggleDarkMode() async {
-    _isDarkMode = !_isDarkMode;
+    await cycleThemeMode();
+  }
+
+  /// チュートリアルを完了してクリーンな本番画面へ進む
+  Future<void> completeTutorial() async {
+    if (_isTutorialDemoMode) {
+      await exitTutorialDemoMode();
+      return;
+    }
+    _hasCompletedTutorial = true;
+    await _saveAll();
+    notifyListeners();
+  }
+
+  /// チュートリアル画面を再度開く
+  void reopenTutorial() {
+    _hasCompletedTutorial = false;
+    notifyListeners();
+  }
+
+  /// チュートリアル用の「使用例体験モード」を開始する（本番データは退避し、一切汚さない）
+  void enterTutorialDemoMode({DateTime? nowOverride}) {
+    if (!_isTutorialDemoMode) {
+      _backupWallets = List<Wallet>.from(_wallets);
+      _backupTransactions = List<TransactionItem>.from(_transactions);
+      _backupRecurringRules = List<RecurringRule>.from(_recurringRules);
+      _backupQuickTemplates = List<QuickTemplate>.from(_quickTemplates);
+      _isTutorialDemoMode = true;
+    }
+    final now = nowOverride ?? DateTime.now();
+    _wallets = _defaultWallets(zeroBalance: false);
+    _transactions = _defaultSampleTransactions(now);
+    _sortTransactions();
+    _recurringRules = _defaultRecurringRules();
+    _quickTemplates = _defaultTemplates();
+    _hasCompletedTutorial = true;
+    notifyListeners();
+  }
+
+  /// チュートリアル体験モードを終了し、使用例を完全に消して本番データへ戻す
+  Future<void> exitTutorialDemoMode() async {
+    if (_isTutorialDemoMode) {
+      _wallets = _backupWallets ?? _cleanInitialWallets();
+      _transactions = _backupTransactions ?? [];
+      _recurringRules = _backupRecurringRules ?? [];
+      _quickTemplates = _backupQuickTemplates ?? [];
+      _backupWallets = null;
+      _backupTransactions = null;
+      _backupRecurringRules = null;
+      _backupQuickTemplates = null;
+      _isTutorialDemoMode = false;
+    }
+    _hasCompletedTutorial = true;
     await _saveAll();
     notifyListeners();
   }
@@ -597,10 +695,17 @@ class FinanceStore extends ChangeNotifier {
     required bool withSampleData,
     DateTime? nowOverride,
   }) async {
+    _isTutorialDemoMode = false;
+    _backupWallets = null;
+    _backupTransactions = null;
+    _backupRecurringRules = null;
+    _backupQuickTemplates = null;
     final now = nowOverride ?? DateTime.now();
-    _wallets = _defaultWallets(zeroBalance: !withSampleData);
+    _wallets = withSampleData
+        ? _defaultWallets(zeroBalance: false)
+        : _cleanInitialWallets();
     _recurringRules = withSampleData ? _defaultRecurringRules() : [];
-    _quickTemplates = _defaultTemplates();
+    _quickTemplates = withSampleData ? _defaultTemplates() : [];
     _transactions = withSampleData ? _defaultSampleTransactions(now) : [];
     _sortTransactions();
     _simDays = 30;
@@ -615,6 +720,18 @@ class FinanceStore extends ChangeNotifier {
   // ===========================================================================
   // 初期データ定義
   // ===========================================================================
+
+  /// 新規インストール・クリア時の最小限クリーン状態（現金0円のみ・使用例なし）
+  static List<Wallet> _cleanInitialWallets() => const [
+        Wallet(
+          id: 'cash',
+          name: '現金',
+          type: WalletType.cash,
+          initialBalance: 0,
+          colorValue: 0xFF2E7D32,
+          includeInSimulation: true,
+        ),
+      ];
 
   static List<Wallet> _defaultWallets({bool zeroBalance = false}) => [
         Wallet(

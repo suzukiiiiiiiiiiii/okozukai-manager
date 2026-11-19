@@ -75,32 +75,38 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         // 1. 月切り替えバー
         Card(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 IconButton(
                   onPressed: () => _shiftMonth(-1),
                   icon: const Icon(Icons.chevron_left_rounded),
                 ),
-                Column(
-                  children: [
-                    Text(
-                      formatYearMonth(_year, _month),
-                      style: const TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w800,
+                Expanded(
+                  child: Column(
+                    children: [
+                      Text(
+                        formatYearMonth(_year, _month),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '支出 ${formatYen(monthExp)}  /  収入 ${formatYen(monthInc)}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: scheme.onSurface.withValues(alpha: 0.7),
+                      const SizedBox(height: 2),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          '支出 ${formatYen(monthExp)}  /  収入 ${formatYen(monthInc)}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: scheme.onSurface.withValues(alpha: 0.7),
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 IconButton(
                   onPressed: () => _shiftMonth(1),
@@ -121,20 +127,28 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      '何にいくら使ったか（カテゴリ別内訳）',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
+                    const Expanded(
+                      child: Text(
+                        'カテゴリ別内訳',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
                     if (_selectedCategoryId != null)
                       TextButton(
                         onPressed: () =>
                             setState(() => _selectedCategoryId = null),
-                        child: const Text('絞り込み解除', style: TextStyle(fontSize: 12)),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: const Text('解除', style: TextStyle(fontSize: 12)),
                       ),
                   ],
                 ),

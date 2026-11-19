@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'app_theme.dart';
 import 'finance_store.dart';
 import 'screens/main_shell.dart';
+import 'screens/tutorial_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,8 +27,10 @@ class OkozukaiApp extends StatelessWidget {
           return MaterialApp(
             title: 'お小遣い管理',
             debugShowCheckedModeBanner: false,
-            theme: buildAppTheme(isDark: finance.isDarkMode),
-            home: const MainShell(),
+            theme: buildAppTheme(mode: finance.themeMode),
+            home: finance.hasCompletedTutorial
+                ? const MainShell()
+                : const TutorialScreen(),
           );
         },
       ),
